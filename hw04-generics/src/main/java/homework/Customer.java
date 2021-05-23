@@ -1,14 +1,9 @@
 package homework;
 
-public class Customer implements Comparable<Customer> {
+public class Customer {
     private final long id;
     private String name;
     private long scores;
-
-    @Override
-    public int compareTo(Customer customer) {
-        return (int) (this.getScores() - customer.getScores());
-    }
 
     //todo: 1. в этом классе надо исправить ошибки
 
