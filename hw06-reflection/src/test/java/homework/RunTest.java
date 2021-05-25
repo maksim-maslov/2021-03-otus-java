@@ -1,22 +1,18 @@
 package homework;
 
-import homework.annotations.usage.AnnotationsUse;
+import homework.annotations.After;
+import homework.annotations.Before;
+import homework.annotations.Test;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+
 
 public class RunTest {
-    public static void main(String[] args) {
 
-        Class<AnnotationsUse> clazz = AnnotationsUse.class;
-        runTests(clazz);
-    }
-
-    public static void runTests(Class clazz) {
-
-        String[] annotations = {"homework.annotations.Before", "homework.annotations.Test", "homework.annotations.After"};
+    public static void runTests(Class<?> clazz) {
 
         int allRunTests = 0;
         int failedTests = 0;
@@ -25,42 +21,54 @@ public class RunTest {
         try {
 
             System.out.println("Creating new object...");
-            Constructor<AnnotationsUse> constructor = clazz.getConstructor();
-            AnnotationsUse object = constructor.newInstance();
+            Constructor<?> constructor = clazz.getConstructor();
+            Object object = constructor.newInstance();
             System.out.println();
 
             System.out.println("Execute annotated methods...");
             Method[] annotatedMethod = clazz.getDeclaredMethods();
 
-            for (String annotation : annotations) {
+            Method beforeMethod = null;
+            Method afterMethod = null;
+            ArrayList<Method> testMethods = new ArrayList<>();
 
-                System.out.println(annotation);
-
-                for (Method el : annotatedMethod) {
-
-                    if (el.isAnnotationPresent((Class<? extends Annotation>) Class.forName(annotation))) {
-
-                        allRunTests++;
-
-                        try {
-
-                            el.invoke(object);
-                            passedTests++;
-
-                        } catch (InvocationTargetException wrappedException) {
-
-                            Throwable e = wrappedException.getCause();
-                            System.out.println(el + " failed: " + e);
-
-                            failedTests++;
-
-                            e.printStackTrace();
-                        }
-                    }
+            for (Method el : annotatedMethod) {
+                if (el.isAnnotationPresent(Before.class)) {
+                    beforeMethod = el;
+                } else if (el.isAnnotationPresent(After.class)) {
+                    afterMethod = el;
+                } else if (el.isAnnotationPresent(Test.class)) {
+                    testMethods.add(el);
                 }
-
-                System.out.println();
             }
+
+
+            for (Method el : testMethods) {
+
+                try {
+
+                    beforeMethod.invoke(object);
+
+                    allRunTests++;
+
+                    el.invoke(object);
+
+                    passedTests++;
+
+                    afterMethod.invoke(object);
+
+                } catch (InvocationTargetException wrappedException) {
+
+                    failedTests++;
+
+                    Throwable e = wrappedException.getCause();
+                    System.out.println(el + " failed: " + e);
+
+                    e.printStackTrace();
+                }
+            }
+
+            System.out.println();
 
         } catch (Exception e) {
             e.printStackTrace();
