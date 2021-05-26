@@ -3,6 +3,7 @@ package homework;
 import homework.annotations.After;
 import homework.annotations.Before;
 import homework.annotations.Test;
+import homework.annotations.usage.AnnotationsUse;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -49,17 +50,39 @@ public class RunTest {
 
                     beforeMethod.invoke(object);
 
+                } catch (InvocationTargetException wrappedException) {
+
+                    Throwable e = wrappedException.getCause();
+                    System.out.println(el + " failed: " + e);
+
+                    e.printStackTrace();
+                }
+
+
+                try {
+
                     allRunTests++;
 
                     el.invoke(object);
 
                     passedTests++;
 
-                    afterMethod.invoke(object);
-
                 } catch (InvocationTargetException wrappedException) {
 
                     failedTests++;
+
+                    Throwable e = wrappedException.getCause();
+                    System.out.println(el + " failed: " + e);
+
+                    e.printStackTrace();
+                }
+
+
+                try {
+
+                    afterMethod.invoke(object);
+
+                } catch (InvocationTargetException wrappedException) {
 
                     Throwable e = wrappedException.getCause();
                     System.out.println(el + " failed: " + e);
