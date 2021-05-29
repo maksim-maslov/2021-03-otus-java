@@ -16,7 +16,6 @@ public class CustomerReverseOrder {
     }
 
     public Customer take() {
-//        return null; // это "заглушка, чтобы скомилировать"
         return this.stackCustomer.removeLast();
     }
 }

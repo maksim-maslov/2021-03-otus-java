@@ -1,12 +1,9 @@
 package homework;
 
-import javafx.util.Pair;
-
 import java.util.Comparator;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 public class CustomerService {
 
@@ -18,7 +15,6 @@ public class CustomerService {
 
     public Map.Entry<Customer, String> getSmallest() {
         //Возможно, чтобы реализовать этот метод, потребуется посмотреть как Map.Entry сделан в jdk
-//        return null; // это "заглушка, чтобы скомилировать"
 
         return this.customers.firstEntry() == null
             ? null
@@ -26,7 +22,6 @@ public class CustomerService {
     }
 
     public Map.Entry<Customer, String> getNext(Customer customer) {
-//        return null; // это "заглушка, чтобы скомилировать"
 
         return this.customers.higherEntry(customer) == null
             ? null
