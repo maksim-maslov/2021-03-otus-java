@@ -17,18 +17,14 @@ public class TestRunner {
 
     public static void run(Class<?> clazz) {
 
-        Map<String, List<Method>> annotatedMethods = new HashMap<>();
-        annotatedMethods = getAnnotatedMethods(clazz);
+        Map<String, List<Method>> annotatedMethods = getAnnotatedMethods(clazz);
 
-
-        Map<String, Integer> statistics = new HashMap<>();
-        statistics.put("allRunTests", 0);
-        statistics.put("passedTests", 0);
-        statistics.put("failedTests", 0);
-
+        Statistics statistics = new Statistics();
 
         System.out.println("Execute test methods...");
         System.out.println();
+
+        Method method = null;
 
         for (Method el : annotatedMethods.get("Test")) {
 
@@ -37,9 +33,37 @@ public class TestRunner {
                 Constructor<?> constructor = clazz.getConstructor();
                 Object object = constructor.newInstance();
 
-                runAnnotatedMethod(annotatedMethods.get("After").get(0), object, false, statistics);
-                runAnnotatedMethod(el, object, true, statistics);
-                runAnnotatedMethod(annotatedMethods.get("After").get(0), object, false, statistics);
+
+                try {
+
+                    for (Method beforeMethod : annotatedMethods.get("Before")) {
+                        method = beforeMethod;
+                        method.invoke(object);
+                    }
+
+                    method = el;
+
+                    statistics.setAllTests(statistics.getAllTests() + 1);
+
+                    method.invoke(object);
+
+                    statistics.setPassedTests(statistics.getPassedTests() + 1);
+
+                    for (Method afterMethod : annotatedMethods.get("After")) {
+                        method = afterMethod;
+                        method.invoke(object);
+                    }
+
+                } catch (InvocationTargetException | IllegalAccessException wrappedException) {
+
+                    if (method.isAnnotationPresent(Test.class)) {
+                        statistics.setFailedTests(statistics.getFailedTests() + 1);
+                    }
+
+                    Throwable e = wrappedException.getCause();
+                    System.out.println(method + " failed: " + e);
+
+                }
 
             } catch (NoSuchMethodException | InstantiationException | InvocationTargetException | IllegalAccessException wrappedException) {
 
@@ -76,39 +100,14 @@ public class TestRunner {
     }
 
 
-    private static void runAnnotatedMethod(Method method, Object object, boolean isTestAnnotatedMethod, Map<String, Integer> statistics) {
-
-        try {
-
-            if (isTestAnnotatedMethod) {
-                statistics.put("allRunTests", statistics.get("allRunTests") + 1);
-            }
-
-            method.invoke(object);
-
-            if (isTestAnnotatedMethod) {
-                statistics.put("passedTests", statistics.get("passedTests") + 1);
-            }
-
-        } catch (InvocationTargetException | IllegalAccessException wrappedException) {
-
-            if (isTestAnnotatedMethod) {
-                statistics.put("failedTests", statistics.get("failedTests") + 1);
-            }
-
-            Throwable e = wrappedException.getCause();
-            System.out.println(method + " failed: " + e);
-
-        }
-    }
-
-
-    private static void printRunStatistics(Map<String, Integer> statistics) {
+    private static void printRunStatistics(Statistics statistics) {
 
         System.out.println();
 
-        System.out.println("--- all tests: " + statistics.get("allRunTests"));
-        System.out.println("--- failed tests: " + statistics.get("failedTests"));
-        System.out.println("--- passed tests: " + statistics.get("passedTests"));
+        System.out.println("--- all tests: " + statistics.getAllTests());
+        System.out.println("--- failed tests: " + statistics.getFailedTests());
+        System.out.println("--- passed tests: " + statistics.getPassedTests());
     }
+
+
 }
