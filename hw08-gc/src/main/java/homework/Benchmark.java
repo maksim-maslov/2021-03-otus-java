@@ -1,38 +1,24 @@
 package homework;
 
 
+import java.util.ArrayList;
+import java.util.List;
+
 class Benchmark implements BenchmarkMBean {
 
-    private volatile int size = 0;
-
     void run() throws InterruptedException {
+        List<String> list = new ArrayList<>();
 
-        int local = size;
-        Object[] array = new Object[local];
+        for (int c = 0; c < 5_000_000; c++) {
+            list.add(new String(new char[1000]));
 
-
-        for (int i = 0; i < local; i++) {
-
-            array[i] = new String(new char[1000]);
-
-            if (i % 2 == 0) {
-                array[i] = null;
+            if (c % 2 == 0) {
+                list.remove(list.size() - 1);
             }
 
-            if (i % 50 == 0) {
-                Thread.sleep(10); //Label_1
+            if (c % 50 == 0) { // -Xmx256m : c % 50, -Xmx2048m : c % 500
+                Thread.sleep(20);
             }
         }
-    }
-
-    @Override
-    public int getSize() {
-        return size;
-    }
-
-    @Override
-    public void setSize(int size) {
-        System.out.println("new size:" + size);
-        this.size = size;
     }
 }

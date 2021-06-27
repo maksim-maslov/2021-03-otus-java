@@ -2,8 +2,13 @@ package homework;
 
 import com.sun.management.GarbageCollectionNotificationInfo;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,58 +18,21 @@ import javax.management.NotificationListener;
 import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
 
-/*
-О формате логов
-http://openjdk.java.net/jeps/158
-
-
--Xms512m
--Xmx512m
--Xlog:gc=debug:file=./logs/gc-%p-%t.log:tags,uptime,time,level:filecount=5,filesize=10m
--XX:+HeapDumpOnOutOfMemoryError
--XX:HeapDumpPath=./logs/dump
--XX:+UseG1GC
-*/
-
-/*
-1)
-    default, time: 83 sec (82 without Label_1)
-2)
-    -XX:MaxGCPauseMillis=100000, time: 82 sec //Sets a target for the maximum GC pause time.
-3)
-    -XX:MaxGCPauseMillis=10, time: 91 sec
-
-4)
--Xms2048m
--Xmx2048m
-    time: 81 sec
-
-5)
--Xms5120m
--Xmx5120m
-    time: 80 sec
-
-5)
--Xms20480m
--Xmx20480m
-    time: 81 sec (72 without Label_1)
-
-*/
-
 public class GcTest {
     public static void main(String... args) throws Exception {
+
+        List<String> JMXparams = ManagementFactory.getRuntimeMXBean().getInputArguments();
+        System.setOut(new PrintStream(new FileOutputStream("logs" + File.separator + JMXparams.get(3).substring(8) + "-" + JMXparams.get(8).substring(4) + "-" + new SimpleDateFormat("dd_MM_HH_mm_ss").format(new Date()) + ".log")));
+
         System.out.println("Starting pid: " + ManagementFactory.getRuntimeMXBean().getName());
         switchOnMonitoring();
         long beginTime = System.currentTimeMillis();
-
-        int size = 5 * 1000 * 1000;
 
         MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
         ObjectName name = new ObjectName("homework:type=Benchmark");
 
         Benchmark mbean = new Benchmark();
         mbs.registerMBean(mbean, name);
-        mbean.setSize(size);
         mbean.run();
 
         System.out.println("time:" + (System.currentTimeMillis() - beginTime) / 1000);
@@ -74,8 +42,8 @@ public class GcTest {
 
         List<GarbageCollectorMXBean> gcbeans = java.lang.management.ManagementFactory.getGarbageCollectorMXBeans();
 
-
         GCRunsStatisticCollector gcRunsStatisticCollector = new GCRunsStatisticCollector();
+        gcRunsStatisticCollector.statistics.put("allTime", 0);
 
         for (GarbageCollectorMXBean gcbean : gcbeans) {
 
@@ -95,18 +63,25 @@ public class GcTest {
 
                     System.out.println("start:" + startTime + " Name:" + gcName + ", action:" + gcAction + ", gcCause:" + gcCause + "(" + duration + " ms)");
 
-                    long pacing = info.getGcInfo().getStartTime() - gcRunsStatisticCollector.getLastTimestampRunGC();
-                    gcRunsStatisticCollector.setLastTimestampRunGC(info.getGcInfo().getStartTime());
+                    long endTime = info.getGcInfo().getEndTime();
+                    long pacing = endTime - gcRunsStatisticCollector.getLastTimestampRunGC();
+                    gcRunsStatisticCollector.setLastTimestampRunGC(endTime);
 
-                    float timeForGCCollection = Float.valueOf(duration) / Float.valueOf(60000 / pacing);
+                    long timeForGCCollection = (long) (duration * (60000f / pacing));
 
                     gcRunsStatisticCollector.statistics.put(gcbean.getName(), gcRunsStatisticCollector.statistics.get(gcbean.getName()) + 1);
 
+                    int allTime = gcRunsStatisticCollector.statistics.get("allTime") + (int) duration;
+                    gcRunsStatisticCollector.statistics.put("allTime", allTime);
+
                     for (Map.Entry entry : gcRunsStatisticCollector.statistics.entrySet()) {
-                        System.out.print(entry.getKey() + ":" + entry.getValue() + ", ");
+                        if (!entry.getKey().equals("allTime")) {
+                            System.out.print(entry.getKey() + ":" + entry.getValue() + ", ");
+                        }
                     }
 
-                    System.out.println("Time for collection (in min):" + timeForGCCollection + " ms");
+                    System.out.print("Time for collection (in min):" + timeForGCCollection + " ms");
+                    System.out.println(", all time:" + gcRunsStatisticCollector.statistics.get("allTime") + " ms");
                 }
             };
             emitter.addNotificationListener(listener, null, null);
@@ -115,7 +90,7 @@ public class GcTest {
 
     private static class GCRunsStatisticCollector {
         Map<String, Integer> statistics = new HashMap<>();
-        long lastTimestampRunGC = 0;
+        private long lastTimestampRunGC = 0;
 
         public long getLastTimestampRunGC() {
             return lastTimestampRunGC;
