@@ -16,7 +16,7 @@ class Benchmark implements BenchmarkMBean {
                 list.remove(list.size() - 1);
             }
 
-            if (c % 50 == 0) { // -Xmx256m : c % 50, -Xmx2048m : c % 500
+            if (c % 500 == 0) { // -Xmx256m : c % 50, -Xmx2048m : c % 500
                 Thread.sleep(20);
             }
         }

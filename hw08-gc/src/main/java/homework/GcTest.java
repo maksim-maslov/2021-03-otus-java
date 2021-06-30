@@ -18,6 +18,19 @@ import javax.management.NotificationListener;
 import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
 
+/*
+-Xms2048m
+-Xmx2048m
+-Xlog:gc=debug:file=./logs/gc-%p-%t.log:tags,uptime,time,level:filecount=5,filesize=10m
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:HeapDumpPath=./logs/dump
+-XX:+UseG1GC
+
+// Настройка Survivor space для ParallelGC
+-XX:SurvivorRatio=100
+*/
+
+
 public class GcTest {
     public static void main(String... args) throws Exception {
 
@@ -60,6 +73,9 @@ public class GcTest {
 
                     long startTime = info.getGcInfo().getStartTime();
                     long duration = info.getGcInfo().getDuration();
+
+                    Runtime.getRuntime().maxMemory();
+
 
                     System.out.println("start:" + startTime + " Name:" + gcName + ", action:" + gcAction + ", gcCause:" + gcCause + "(" + duration + " ms)");
 
